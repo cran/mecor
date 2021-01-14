@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Linda Nab" />
+
+<meta name="date" content="2021-01-11" />
+
+<title>A user’s guide to random measurement error correction in a covariate for R</title>
+
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+});
+</script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+code.sourceCode > span { display: inline-block; line-height: 1.25; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">A user’s guide to random measurement error correction in a covariate for R</h1>
+<h4 class="author">Linda Nab</h4>
+<h4 class="date">2021-01-11</h4>
+
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p><strong>mecor</strong> is an R package for Measurement Error CORrection. <strong>mecor</strong> implements measurement error correction methods for linear models with continuous outcomes. The measurement error can either occur in a continuous covariate or in the continuous outcome. This vignette discusses how a sensitivity analysis for random covariate measurement error is conducted in <strong>mecor</strong>.</p>
+<p><em>Regression calibration</em> is one of the most popular measurement error correction methods for covariate measurement error. This vignette shows how <em>regression calibration</em> is used in <strong>mecor</strong> to correct for random measurement error in a covariate. Our interest lies in estimating the association between a continuous reference exposure <span class="math inline">\(X\)</span> and a continuous outcome <span class="math inline">\(Y\)</span>, given covariates <span class="math inline">\(Z\)</span>. Instead of <span class="math inline">\(X\)</span>, the substitute error-prone exposure <span class="math inline">\(X^*\)</span> is measured, assumed with random measurement error. It is further assumed that there is no extra information available to quantify the random measurement error in <span class="math inline">\(X^*\)</span>. The input for our measurement error correction therefore is constrained to informed guesses about the size of the random measurement error. Literature or expert knowledge could be used to inform these guesses. We refer to the vignettes discussing e.g. <em>standard regression calibration</em> for random measurement error correction when validation data is available.</p>
+</div>
+<div id="random-measurement-error" class="section level2">
+<h2>Random measurement error</h2>
+<p>We assume that <span class="math inline">\(X^*\)</span> is measured with random measurement error. This means that we assume that <span class="math inline">\(X^* = X + U\)</span>, where <span class="math inline">\(U\)</span> has mean 0 and variance <span class="math inline">\(\tau^2\)</span>. More specifically, we assume non-differential random measurement error, i.e. <span class="math inline">\(X^*|X\)</span> is independent of <span class="math inline">\(Y\)</span> (our outcome).</p>
+</div>
+<div id="random-measurement-error-correction-in-mecor" class="section level2">
+<h2>Random measurement error correction in <strong>mecor</strong></h2>
+<p>The object <code>MeasErrorRandom()</code> in <strong>mecor</strong> is used for random measurement error correction in a covariate. We explain the usage of the <code>MeasErrorRandom()</code> object in the following. We first introduce the simulated data set <code>icvs</code>. The simulated data set <code>icvs</code> is an internal covariate-validation study. We will use this data set to explore random measurement error correction without using the reference measure <span class="math inline">\(X\)</span> that is available in the data set. The data set <code>icvs</code> contains 1000 observations of the outcome <span class="math inline">\(Y\)</span>, the error-prone exposure <span class="math inline">\(X^*\)</span> and the covariate <span class="math inline">\(Z\)</span>. The reference exposure <span class="math inline">\(X\)</span> is observed in approximately 25% of the individuals in the study, but will be ignored.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="co"># load internal covariate validation study</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">data</span>(<span class="st">&quot;icvs&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;mecor&quot;</span>)</span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">head</span>(icvs)</span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="co">#&gt;           Y     X_star          Z          X</span></span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="co">#&gt; 1 -3.473164 -0.2287010 -1.5858049         NA</span></span>
+<span id="cb1-6"><a href="#cb1-6"></a><span class="co">#&gt; 2 -3.327934 -1.3320494 -0.6077454         NA</span></span>
+<span id="cb1-7"><a href="#cb1-7"></a><span class="co">#&gt; 3  1.314735  2.0305727  0.4461727  2.2256377</span></span>
+<span id="cb1-8"><a href="#cb1-8"></a><span class="co">#&gt; 4  1.328727  0.3027101  0.1739813         NA</span></span>
+<span id="cb1-9"><a href="#cb1-9"></a><span class="co">#&gt; 5  1.240446 -0.8465389  1.5480392 -0.7521792</span></span>
+<span id="cb1-10"><a href="#cb1-10"></a><span class="co">#&gt; 6  3.183868  0.1081888  1.1230232         NA</span></span></code></pre></div>
+<p>When ignoring the measurement error in <span class="math inline">\(X^*\)</span>, one would naively regress <span class="math inline">\(X^*\)</span> and <span class="math inline">\(Z\)</span> on <span class="math inline">\(Y\)</span>. This results in a biased estimation of the exposure-outcome association:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="co"># naive estimate of the exposure-outcome association</span></span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="kw">lm</span>(Y <span class="op">~</span><span class="st"> </span>X_star <span class="op">+</span><span class="st"> </span>Z, <span class="dt">data =</span> icvs)</span>
+<span id="cb2-3"><a href="#cb2-3"></a><span class="co">#&gt; </span></span>
+<span id="cb2-4"><a href="#cb2-4"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb2-5"><a href="#cb2-5"></a><span class="co">#&gt; lm(formula = Y ~ X_star + Z, data = icvs)</span></span>
+<span id="cb2-6"><a href="#cb2-6"></a><span class="co">#&gt; </span></span>
+<span id="cb2-7"><a href="#cb2-7"></a><span class="co">#&gt; Coefficients:</span></span>
+<span id="cb2-8"><a href="#cb2-8"></a><span class="co">#&gt; (Intercept)       X_star            Z  </span></span>
+<span id="cb2-9"><a href="#cb2-9"></a><span class="co">#&gt;    -0.03947      0.41372      2.08457</span></span></code></pre></div>
+<p>Suppose that <span class="math inline">\(X\)</span> is not observed in the internal covariate-validation study <code>icvs</code>. To correct the bias in the naive association between exposure <span class="math inline">\(X^*\)</span> and outcome <span class="math inline">\(Y\)</span> given <span class="math inline">\(Z\)</span>, we need to make an informed guess about the quantity of <span class="math inline">\(\tau^2\)</span>. Suppose we assume <span class="math inline">\(\tau^2 = 0.25\)</span>. One can proceed as follows using <code>mecor()</code>:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="co"># Use MeasErrorRandom for measurement error correction:</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">mecor</span>(Y <span class="op">~</span><span class="st"> </span><span class="kw">MeasErrorRandom</span>(<span class="dt">substitute =</span> X_star, <span class="dt">variance =</span> <span class="fl">0.25</span>) <span class="op">+</span><span class="st"> </span>Z,</span>
+<span id="cb3-3"><a href="#cb3-3"></a>      <span class="dt">data =</span> icvs)</span>
+<span id="cb3-4"><a href="#cb3-4"></a><span class="co">#&gt; </span></span>
+<span id="cb3-5"><a href="#cb3-5"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb3-6"><a href="#cb3-6"></a><span class="co">#&gt; mecor(formula = Y ~ MeasErrorRandom(substitute = X_star, variance = 0.25) + </span></span>
+<span id="cb3-7"><a href="#cb3-7"></a><span class="co">#&gt;     Z, data = icvs)</span></span>
+<span id="cb3-8"><a href="#cb3-8"></a><span class="co">#&gt; </span></span>
+<span id="cb3-9"><a href="#cb3-9"></a><span class="co">#&gt; Coefficients Corrected Model:</span></span>
+<span id="cb3-10"><a href="#cb3-10"></a><span class="co">#&gt; (Intercept)  cor_X_star           Z </span></span>
+<span id="cb3-11"><a href="#cb3-11"></a><span class="co">#&gt; -0.03244702  0.50953290  1.98557861 </span></span>
+<span id="cb3-12"><a href="#cb3-12"></a><span class="co">#&gt; </span></span>
+<span id="cb3-13"><a href="#cb3-13"></a><span class="co">#&gt; Coefficients Uncorrected Model:</span></span>
+<span id="cb3-14"><a href="#cb3-14"></a><span class="co">#&gt; (Intercept)      X_star           Z </span></span>
+<span id="cb3-15"><a href="#cb3-15"></a><span class="co">#&gt; -0.03946702  0.41371614  2.08457045</span></span></code></pre></div>
+</div>
+<div id="how-does-mecor-do-this" class="section level2">
+<h2>How does <strong>mecor</strong> do this?</h2>
+<p>To correct for the random measurement error in <span class="math inline">\(X^*\)</span>, <strong>mecor</strong> constructs the calibration model matrix as follows:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="co"># First, construct the variance--covariance matrix of X_star and Z: </span></span>
+<span id="cb4-2"><a href="#cb4-2"></a><span class="co"># ( Var(X_star)   Cov(X_star, Z)</span></span>
+<span id="cb4-3"><a href="#cb4-3"></a><span class="co">#   Cov(Z,X_star) Var(Z)       )</span></span>
+<span id="cb4-4"><a href="#cb4-4"></a><span class="co"># To do so, we design Q, a matrix with 1000 rows (number of observations) and 2 </span></span>
+<span id="cb4-5"><a href="#cb4-5"></a><span class="co"># columns. The first column of Q contains all 1000 observations of X_star, each </span></span>
+<span id="cb4-6"><a href="#cb4-6"></a><span class="co"># minus the mean of X_star. The second column of Q contains all 1000 obervations </span></span>
+<span id="cb4-7"><a href="#cb4-7"></a><span class="co"># of Z, each minus the mean of Z. </span></span>
+<span id="cb4-8"><a href="#cb4-8"></a>Q &lt;-<span class="st"> </span><span class="kw">scale</span>(<span class="kw">cbind</span>(icvs<span class="op">$</span>X_star, icvs<span class="op">$</span>Z), <span class="dt">scale =</span> F)</span>
+<span id="cb4-9"><a href="#cb4-9"></a><span class="co"># Subsequently, the variance--covariance matrix of X_star and Z is constructed:</span></span>
+<span id="cb4-10"><a href="#cb4-10"></a>matrix &lt;-<span class="st"> </span><span class="kw">t</span>(Q) <span class="op">%*%</span><span class="st"> </span>Q <span class="op">/</span><span class="st"> </span>(<span class="kw">length</span>(icvs<span class="op">$</span>X_star) <span class="op">-</span><span class="st"> </span><span class="dv">1</span>)</span>
+<span id="cb4-11"><a href="#cb4-11"></a><span class="co"># Then, the variance--covariance matrix of X and Z is constructed, by using:</span></span>
+<span id="cb4-12"><a href="#cb4-12"></a><span class="co"># Var(X) = Var(X_star) - Var(U) &lt;--- Var(U) is the assumed tau^2</span></span>
+<span id="cb4-13"><a href="#cb4-13"></a><span class="co"># Cov(X, Z) = Cov(X_star, Z)    &lt;--- since U is assumed independent of Z</span></span>
+<span id="cb4-14"><a href="#cb4-14"></a>matrix1 &lt;-<span class="st"> </span>matrix</span>
+<span id="cb4-15"><a href="#cb4-15"></a>matrix1[<span class="dv">1</span>, <span class="dv">1</span>] &lt;-<span class="st"> </span>matrix1[<span class="dv">1</span>, <span class="dv">1</span>] <span class="op">-</span><span class="st"> </span><span class="fl">0.25</span> <span class="co"># tau^2 = 0.25</span></span>
+<span id="cb4-16"><a href="#cb4-16"></a><span class="co"># Rosner et al. (1992) show that the calibration model matrix can be constructed</span></span>
+<span id="cb4-17"><a href="#cb4-17"></a><span class="co"># by taking the inverse of the variance--covariance matrix of X and Z and by</span></span>
+<span id="cb4-18"><a href="#cb4-18"></a><span class="co"># matrix multiplying that matrix with the variance--covariance matrix of X_star</span></span>
+<span id="cb4-19"><a href="#cb4-19"></a><span class="co"># and Z. </span></span>
+<span id="cb4-20"><a href="#cb4-20"></a>model_matrix &lt;-<span class="st"> </span><span class="kw">solve</span>(matrix1) <span class="op">%*%</span><span class="st"> </span>matrix</span>
+<span id="cb4-21"><a href="#cb4-21"></a>model_matrix</span>
+<span id="cb4-22"><a href="#cb4-22"></a><span class="co">#&gt;            [,1]         [,2]</span></span>
+<span id="cb4-23"><a href="#cb4-23"></a><span class="co">#&gt; [1,]  1.2316002 1.110223e-16</span></span>
+<span id="cb4-24"><a href="#cb4-24"></a><span class="co">#&gt; [2,] -0.2392748 1.000000e+00</span></span>
+<span id="cb4-25"><a href="#cb4-25"></a>matrix1 <span class="op">%*%</span><span class="st"> </span><span class="kw">solve</span>(matrix)</span>
+<span id="cb4-26"><a href="#cb4-26"></a><span class="co">#&gt;              [,1]      [,2]</span></span>
+<span id="cb4-27"><a href="#cb4-27"></a><span class="co">#&gt; [1,] 8.119518e-01 0.1942796</span></span>
+<span id="cb4-28"><a href="#cb4-28"></a><span class="co">#&gt; [2,] 1.110223e-16 1.0000000</span></span>
+<span id="cb4-29"><a href="#cb4-29"></a><span class="co"># The resulting matrix is now:</span></span>
+<span id="cb4-30"><a href="#cb4-30"></a><span class="co"># (1/lambda1        0</span></span>
+<span id="cb4-31"><a href="#cb4-31"></a><span class="co">#  -lambda2/lambda1 1)</span></span>
+<span id="cb4-32"><a href="#cb4-32"></a><span class="co"># Where,</span></span>
+<span id="cb4-33"><a href="#cb4-33"></a><span class="co"># lambda1 = Cov(X,X_star|Z) / Var(X_star|Z)</span></span>
+<span id="cb4-34"><a href="#cb4-34"></a><span class="co"># lambda2 = Cov(X,Z|X_star) / Var(Z|X_star) </span></span>
+<span id="cb4-35"><a href="#cb4-35"></a><span class="co"># Or, more familiar, the calibration model,</span></span>
+<span id="cb4-36"><a href="#cb4-36"></a><span class="co"># E[X|X_star, Z] = lambda0 + lambda1 * X_star + lambda2 * Z</span></span>
+<span id="cb4-37"><a href="#cb4-37"></a>lambda1 &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">/</span><span class="st"> </span>model_matrix[<span class="dv">1</span>, <span class="dv">1</span>]</span>
+<span id="cb4-38"><a href="#cb4-38"></a>lambda2 &lt;-<span class="st"> </span>model_matrix[<span class="dv">2</span>,<span class="dv">1</span>] <span class="op">*</span><span class="st"> </span><span class="op">-</span>lambda1</span>
+<span id="cb4-39"><a href="#cb4-39"></a><span class="co"># From standard theory, we have,</span></span>
+<span id="cb4-40"><a href="#cb4-40"></a><span class="co"># lambda0 = mean(X) - lambda1 * mean(X_star) - lambda2 * mean(Z)</span></span>
+<span id="cb4-41"><a href="#cb4-41"></a><span class="co"># mean(X) = mean(X_star) since we assume random measurement error</span></span>
+<span id="cb4-42"><a href="#cb4-42"></a>lambda0 &lt;-<span class="st"> </span><span class="kw">mean</span>(icvs<span class="op">$</span>X_star) <span class="op">-</span><span class="st"> </span>lambda1 <span class="op">*</span><span class="st"> </span><span class="kw">mean</span>(icvs<span class="op">$</span>X_star) <span class="op">-</span><span class="st"> </span>lambda2 <span class="op">*</span><span class="st"> </span><span class="kw">mean</span>(icvs<span class="op">$</span>Z)</span>
+<span id="cb4-43"><a href="#cb4-43"></a><span class="co"># The calibration model matrix Lambda is defined as:</span></span>
+<span id="cb4-44"><a href="#cb4-44"></a><span class="co"># (lambda1 lambda0 lambda2</span></span>
+<span id="cb4-45"><a href="#cb4-45"></a><span class="co">#  0       1       0</span></span>
+<span id="cb4-46"><a href="#cb4-46"></a><span class="co">#  0       0       1)</span></span>
+<span id="cb4-47"><a href="#cb4-47"></a>model_matrix &lt;-<span class="st"> </span><span class="kw">diag</span>(<span class="dv">3</span>)</span>
+<span id="cb4-48"><a href="#cb4-48"></a>model_matrix[<span class="dv">1</span>, <span class="dv">1</span><span class="op">:</span><span class="dv">3</span>] &lt;-<span class="st"> </span><span class="kw">c</span>(lambda1, lambda0, lambda2)</span>
+<span id="cb4-49"><a href="#cb4-49"></a>model_matrix</span>
+<span id="cb4-50"><a href="#cb4-50"></a><span class="co">#&gt;           [,1]        [,2]      [,3]</span></span>
+<span id="cb4-51"><a href="#cb4-51"></a><span class="co">#&gt; [1,] 0.8119518 -0.01377731 0.1942796</span></span>
+<span id="cb4-52"><a href="#cb4-52"></a><span class="co">#&gt; [2,] 0.0000000  1.00000000 0.0000000</span></span>
+<span id="cb4-53"><a href="#cb4-53"></a><span class="co">#&gt; [3,] 0.0000000  0.00000000 1.0000000</span></span>
+<span id="cb4-54"><a href="#cb4-54"></a><span class="co"># The calibration model matrix is standard output of mecor, and can be found</span></span>
+<span id="cb4-55"><a href="#cb4-55"></a><span class="co"># using:</span></span>
+<span id="cb4-56"><a href="#cb4-56"></a>mecor_fit &lt;-<span class="st"> </span><span class="kw">mecor</span>(Y <span class="op">~</span><span class="st"> </span><span class="kw">MeasErrorRandom</span>(X_star, <span class="fl">0.25</span>) <span class="op">+</span><span class="st"> </span>Z,</span>
+<span id="cb4-57"><a href="#cb4-57"></a>                   <span class="dt">data =</span> icvs)</span>
+<span id="cb4-58"><a href="#cb4-58"></a>mecor_fit<span class="op">$</span>corfit<span class="op">$</span>matrix</span>
+<span id="cb4-59"><a href="#cb4-59"></a><span class="co">#&gt;           Lambda1     Lambda0   Lambda3</span></span>
+<span id="cb4-60"><a href="#cb4-60"></a><span class="co">#&gt; Lambda1 0.8119518 -0.01377731 0.1942796</span></span>
+<span id="cb4-61"><a href="#cb4-61"></a><span class="co">#&gt; Lambda0 0.0000000  1.00000000 0.0000000</span></span>
+<span id="cb4-62"><a href="#cb4-62"></a><span class="co">#&gt; Lambda3 0.0000000  0.00000000 1.0000000</span></span></code></pre></div>
+<p>Subsequently, the naive estimates of the outcome model are multiplied by the inverse of the calibration model matrix to obtain corrected estimates of the outcome model.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="co"># Fit naive outcome model</span></span>
+<span id="cb5-2"><a href="#cb5-2"></a>naive_fit &lt;-<span class="st"> </span><span class="kw">lm</span>(Y <span class="op">~</span><span class="st"> </span>X_star <span class="op">+</span><span class="st"> </span>Z, </span>
+<span id="cb5-3"><a href="#cb5-3"></a>                <span class="dt">data =</span> icvs)</span>
+<span id="cb5-4"><a href="#cb5-4"></a><span class="co"># Save coefficients</span></span>
+<span id="cb5-5"><a href="#cb5-5"></a>beta_star &lt;-<span class="st"> </span>naive_fit<span class="op">$</span>coefficients</span>
+<span id="cb5-6"><a href="#cb5-6"></a><span class="co"># To prepare the coefficients for the measurement error correction, exchange the</span></span>
+<span id="cb5-7"><a href="#cb5-7"></a><span class="co"># intercept and the coefficient for X_star</span></span>
+<span id="cb5-8"><a href="#cb5-8"></a>beta_star[<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>] &lt;-<span class="st"> </span><span class="kw">rev</span>(beta_star[<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]) </span>
+<span id="cb5-9"><a href="#cb5-9"></a><span class="co"># Perform the measurement error correction:</span></span>
+<span id="cb5-10"><a href="#cb5-10"></a>beta &lt;-<span class="st"> </span>beta_star <span class="op">%*%</span><span class="st"> </span><span class="kw">solve</span>(model_matrix)</span>
+<span id="cb5-11"><a href="#cb5-11"></a><span class="co"># Reverse the order </span></span>
+<span id="cb5-12"><a href="#cb5-12"></a>beta[<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>] &lt;-<span class="st"> </span><span class="kw">rev</span>(beta[<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>])</span>
+<span id="cb5-13"><a href="#cb5-13"></a>beta <span class="co"># corrected coefficients of the outcome model</span></span>
+<span id="cb5-14"><a href="#cb5-14"></a><span class="co">#&gt;             [,1]      [,2]     [,3]</span></span>
+<span id="cb5-15"><a href="#cb5-15"></a><span class="co">#&gt; [1,] -0.03244702 0.5095329 1.985579</span></span></code></pre></div>
+<p>Which exactly matches the output of <code>mecor()</code> above.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

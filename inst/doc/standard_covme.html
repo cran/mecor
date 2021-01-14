@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Linda Nab" />
+
+<meta name="date" content="2021-01-11" />
+
+<title>A user’s guide to standard covariate measurement error correction for R</title>
+
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+});
+</script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+code.sourceCode > span { display: inline-block; line-height: 1.25; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">A user’s guide to standard covariate measurement error correction for R</h1>
+<h4 class="author">Linda Nab</h4>
+<h4 class="date">2021-01-11</h4>
+
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p><strong>mecor</strong> is an R package for Measurement Error CORrection. <strong>mecor</strong> implements measurement error correction methods for linear models with continuous outcomes. The measurement error can either occur in a continuous covariate or in the continuous outcome. This vignette discusses covariate measurement error correction by means of <em>standard regression calibration</em> in <strong>mecor</strong>.</p>
+<p><em>Regression calibration</em> is one of the most popular measurement error correction methods for covariate measurement error. This vignette shows how <em>standard regression calibration</em> is applied in an internal validation study, a replicates study, a calibration study and an external validation study. Each of the four studies will be introduced in the subsequent sections, along with examples of how <em>standard regression calibration</em> can be applied in each of the four studies using <strong>mecor</strong>’s function <code>mecor()</code>. In all four studies, our interest lies in estimating the association between a continuous reference exposure <span class="math inline">\(X\)</span> and a continuous outcome <span class="math inline">\(Y\)</span>, given covariates <span class="math inline">\(Z\)</span>. Instead of <span class="math inline">\(X\)</span>, the substitute error-prone exposure <span class="math inline">\(X^*\)</span> is measured.</p>
+</div>
+<div id="internal-validation-study" class="section level2">
+<h2>Internal validation study</h2>
+<p>The simulated data set <code>icvs</code> in <strong>mecor</strong> is an internal covariate-validation study. An internal validation study includes a subset of individuals of whom the reference exposure <span class="math inline">\(X\)</span> is observed. The data set <code>icvs</code> contains 1000 observations of the outcome <span class="math inline">\(Y\)</span>, the error-prone exposure <span class="math inline">\(X^*\)</span> and the covariate <span class="math inline">\(Z\)</span>. The reference exposure <span class="math inline">\(X\)</span> is observed in approximately 25% of the individuals in the study.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="co"># load internal covariate validation study</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">data</span>(<span class="st">&quot;icvs&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;mecor&quot;</span>)</span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">head</span>(icvs)</span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="co">#&gt;           Y     X_star          Z          X</span></span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="co">#&gt; 1 -3.473164 -0.2287010 -1.5858049         NA</span></span>
+<span id="cb1-6"><a href="#cb1-6"></a><span class="co">#&gt; 2 -3.327934 -1.3320494 -0.6077454         NA</span></span>
+<span id="cb1-7"><a href="#cb1-7"></a><span class="co">#&gt; 3  1.314735  2.0305727  0.4461727  2.2256377</span></span>
+<span id="cb1-8"><a href="#cb1-8"></a><span class="co">#&gt; 4  1.328727  0.3027101  0.1739813         NA</span></span>
+<span id="cb1-9"><a href="#cb1-9"></a><span class="co">#&gt; 5  1.240446 -0.8465389  1.5480392 -0.7521792</span></span>
+<span id="cb1-10"><a href="#cb1-10"></a><span class="co">#&gt; 6  3.183868  0.1081888  1.1230232         NA</span></span></code></pre></div>
+<p>When ignoring the measurement error in <span class="math inline">\(X^*\)</span>, one would naively regress <span class="math inline">\(X^*\)</span> and <span class="math inline">\(Z\)</span> on <span class="math inline">\(Y\)</span>. This results in a biased estimation of the exposure-outcome association:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="co"># naive estimate of the exposure-outcome association</span></span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="kw">lm</span>(Y <span class="op">~</span><span class="st"> </span>X_star <span class="op">+</span><span class="st"> </span>Z, <span class="dt">data =</span> icvs)</span>
+<span id="cb2-3"><a href="#cb2-3"></a><span class="co">#&gt; </span></span>
+<span id="cb2-4"><a href="#cb2-4"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb2-5"><a href="#cb2-5"></a><span class="co">#&gt; lm(formula = Y ~ X_star + Z, data = icvs)</span></span>
+<span id="cb2-6"><a href="#cb2-6"></a><span class="co">#&gt; </span></span>
+<span id="cb2-7"><a href="#cb2-7"></a><span class="co">#&gt; Coefficients:</span></span>
+<span id="cb2-8"><a href="#cb2-8"></a><span class="co">#&gt; (Intercept)       X_star            Z  </span></span>
+<span id="cb2-9"><a href="#cb2-9"></a><span class="co">#&gt;    -0.03947      0.41372      2.08457</span></span></code></pre></div>
+<p>Alternatively, one could perform an analysis restricted to the internal validation set:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="co"># analysis restricted to the internal validation set</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">lm</span>(Y <span class="op">~</span><span class="st"> </span>X <span class="op">+</span><span class="st"> </span>Z, <span class="dt">data =</span> <span class="kw">subset</span>(icvs, <span class="op">!</span><span class="kw">is.na</span>(X)))</span>
+<span id="cb3-3"><a href="#cb3-3"></a><span class="co">#&gt; </span></span>
+<span id="cb3-4"><a href="#cb3-4"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb3-5"><a href="#cb3-5"></a><span class="co">#&gt; lm(formula = Y ~ X + Z, data = subset(icvs, !is.na(X)))</span></span>
+<span id="cb3-6"><a href="#cb3-6"></a><span class="co">#&gt; </span></span>
+<span id="cb3-7"><a href="#cb3-7"></a><span class="co">#&gt; Coefficients:</span></span>
+<span id="cb3-8"><a href="#cb3-8"></a><span class="co">#&gt; (Intercept)            X            Z  </span></span>
+<span id="cb3-9"><a href="#cb3-9"></a><span class="co">#&gt;    -0.07297      0.44316      1.87832</span></span></code></pre></div>
+<p>Although the above would result in an unbiased estimation of the exposure-outcome association, approximately 75% of the data is thrown out. Instead of doing an analysis restricted to the internal validation set, you could use <em>standard regression calibration</em> to correct for the measurement error in <span class="math inline">\(X^*\)</span>. The following code chunk shows <em>standard regression calibration</em> with <code>mecor()</code>:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">mecor</span>(<span class="dt">formula =</span> Y <span class="op">~</span><span class="st"> </span><span class="kw">MeasError</span>(<span class="dt">substitute =</span> X_star, <span class="dt">reference =</span> X) <span class="op">+</span><span class="st"> </span>Z,</span>
+<span id="cb4-2"><a href="#cb4-2"></a>      <span class="dt">data =</span> icvs,</span>
+<span id="cb4-3"><a href="#cb4-3"></a>      <span class="dt">method =</span> <span class="st">&quot;standard&quot;</span>, <span class="co"># defaults to &quot;standard&quot;</span></span>
+<span id="cb4-4"><a href="#cb4-4"></a>      <span class="dt">B =</span> <span class="dv">0</span>) <span class="co"># defaults to 0</span></span>
+<span id="cb4-5"><a href="#cb4-5"></a><span class="co">#&gt; </span></span>
+<span id="cb4-6"><a href="#cb4-6"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb4-7"><a href="#cb4-7"></a><span class="co">#&gt; mecor(formula = Y ~ MeasError(substitute = X_star, reference = X) + </span></span>
+<span id="cb4-8"><a href="#cb4-8"></a><span class="co">#&gt;     Z, data = icvs, method = &quot;standard&quot;, B = 0)</span></span>
+<span id="cb4-9"><a href="#cb4-9"></a><span class="co">#&gt; </span></span>
+<span id="cb4-10"><a href="#cb4-10"></a><span class="co">#&gt; Coefficients Corrected Model:</span></span>
+<span id="cb4-11"><a href="#cb4-11"></a><span class="co">#&gt; (Intercept)           X           Z </span></span>
+<span id="cb4-12"><a href="#cb4-12"></a><span class="co">#&gt; -0.03730093  0.49290832  2.00122724 </span></span>
+<span id="cb4-13"><a href="#cb4-13"></a><span class="co">#&gt; </span></span>
+<span id="cb4-14"><a href="#cb4-14"></a><span class="co">#&gt; Coefficients Uncorrected Model:</span></span>
+<span id="cb4-15"><a href="#cb4-15"></a><span class="co">#&gt; (Intercept)      X_star           Z </span></span>
+<span id="cb4-16"><a href="#cb4-16"></a><span class="co">#&gt; -0.03946702  0.41371614  2.08457045</span></span></code></pre></div>
+<p>As shown in the above code chunk, the <code>mecor()</code> function needs a <em>formula</em> argument, a <em>data</em> argument, a <em>method</em> argument and a <em>B</em> argument. Presumably, you are familiar with the structure of a formula in R. The only thing that’s different here is the use of a <code>MeasError()</code> object in the formula. A <code>MeasError()</code> object is used to declare the substitute measure, in our case <span class="math inline">\(X^*\)</span>, and the reference measure, in our case <span class="math inline">\(X\)</span>. The <em>B</em> argument of <code>mecor()</code> is used to calculate bootstrap confidence intervals for the corrected coefficients of the model. Let us construct 95% confidence intervals using the bootstrap with 999 replicates:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="co"># save corrected fit</span></span>
+<span id="cb5-2"><a href="#cb5-2"></a>rc_fit &lt;-<span class="st"> </span></span>
+<span id="cb5-3"><a href="#cb5-3"></a><span class="st">  </span><span class="kw">mecor</span>(<span class="dt">formula =</span> Y <span class="op">~</span><span class="st"> </span><span class="kw">MeasError</span>(<span class="dt">substitute =</span> X_star, <span class="dt">reference =</span> X) <span class="op">+</span><span class="st"> </span>Z,</span>
+<span id="cb5-4"><a href="#cb5-4"></a>        <span class="dt">data =</span> icvs,</span>
+<span id="cb5-5"><a href="#cb5-5"></a>        <span class="dt">method =</span> <span class="st">&quot;standard&quot;</span>, <span class="co"># defaults to &quot;standard&quot;</span></span>
+<span id="cb5-6"><a href="#cb5-6"></a>        <span class="dt">B =</span> <span class="dv">999</span>) <span class="co"># defaults to 0</span></span></code></pre></div>
+<p>Print the confidence intervals to the console using <code>summary()</code>:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">summary</span>(rc_fit)</span>
+<span id="cb6-2"><a href="#cb6-2"></a><span class="co">#&gt; </span></span>
+<span id="cb6-3"><a href="#cb6-3"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb6-4"><a href="#cb6-4"></a><span class="co">#&gt; mecor(formula = Y ~ MeasError(substitute = X_star, reference = X) + </span></span>
+<span id="cb6-5"><a href="#cb6-5"></a><span class="co">#&gt;     Z, data = icvs, method = &quot;standard&quot;, B = 999)</span></span>
+<span id="cb6-6"><a href="#cb6-6"></a><span class="co">#&gt; </span></span>
+<span id="cb6-7"><a href="#cb6-7"></a><span class="co">#&gt; Coefficients Corrected Model:</span></span>
+<span id="cb6-8"><a href="#cb6-8"></a><span class="co">#&gt;              Estimate       SE SE (btstr)</span></span>
+<span id="cb6-9"><a href="#cb6-9"></a><span class="co">#&gt; (Intercept) -0.037301 0.035943   0.035086</span></span>
+<span id="cb6-10"><a href="#cb6-10"></a><span class="co">#&gt; X            0.492908 0.036959   0.037753</span></span>
+<span id="cb6-11"><a href="#cb6-11"></a><span class="co">#&gt; Z            2.001227 0.051999   0.053961</span></span>
+<span id="cb6-12"><a href="#cb6-12"></a><span class="co">#&gt; </span></span>
+<span id="cb6-13"><a href="#cb6-13"></a><span class="co">#&gt; 95% Confidence Intervals:</span></span>
+<span id="cb6-14"><a href="#cb6-14"></a><span class="co">#&gt;              Estimate       LCI      UCI LCI (btstr) UCI (btstr)</span></span>
+<span id="cb6-15"><a href="#cb6-15"></a><span class="co">#&gt; (Intercept) -0.037301 -0.107748 0.033147   -0.103395    0.033592</span></span>
+<span id="cb6-16"><a href="#cb6-16"></a><span class="co">#&gt; X            0.492908  0.420470 0.565347    0.423385    0.571515</span></span>
+<span id="cb6-17"><a href="#cb6-17"></a><span class="co">#&gt; Z            2.001227  1.899311 2.103143    1.889610    2.104471</span></span>
+<span id="cb6-18"><a href="#cb6-18"></a><span class="co">#&gt; Bootstrap Confidence Intervals are based on 999 bootstrap replicates using percentiles </span></span>
+<span id="cb6-19"><a href="#cb6-19"></a><span class="co">#&gt; </span></span>
+<span id="cb6-20"><a href="#cb6-20"></a><span class="co">#&gt; The measurement error is corrected for by application of regression calibration </span></span>
+<span id="cb6-21"><a href="#cb6-21"></a><span class="co">#&gt; </span></span>
+<span id="cb6-22"><a href="#cb6-22"></a><span class="co">#&gt; Coefficients Uncorrected Model:</span></span>
+<span id="cb6-23"><a href="#cb6-23"></a><span class="co">#&gt;              Estimate Std. Error t value Pr(&gt;|t|)</span></span>
+<span id="cb6-24"><a href="#cb6-24"></a><span class="co">#&gt; (Intercept) -0.039467   0.033355 -1.1832    0.237</span></span>
+<span id="cb6-25"><a href="#cb6-25"></a><span class="co">#&gt; X_star       0.413716   0.028883 14.3239   &lt;2e-16</span></span>
+<span id="cb6-26"><a href="#cb6-26"></a><span class="co">#&gt; Z            2.084570   0.044323 47.0316   &lt;2e-16</span></span>
+<span id="cb6-27"><a href="#cb6-27"></a><span class="co">#&gt; </span></span>
+<span id="cb6-28"><a href="#cb6-28"></a><span class="co">#&gt; 95% Confidence Intervals:</span></span>
+<span id="cb6-29"><a href="#cb6-29"></a><span class="co">#&gt;              Estimate       LCI      UCI</span></span>
+<span id="cb6-30"><a href="#cb6-30"></a><span class="co">#&gt; (Intercept) -0.039467 -0.104921 0.025987</span></span>
+<span id="cb6-31"><a href="#cb6-31"></a><span class="co">#&gt; X_star       0.413716  0.357038 0.470394</span></span>
+<span id="cb6-32"><a href="#cb6-32"></a><span class="co">#&gt; Z            2.084570  1.997594 2.171547</span></span>
+<span id="cb6-33"><a href="#cb6-33"></a><span class="co">#&gt; </span></span>
+<span id="cb6-34"><a href="#cb6-34"></a><span class="co">#&gt; Residual standard error: 1.052587 on 997 degrees of freedom</span></span></code></pre></div>
+<p>Two types of 95% confidence intervals are shown in the output of the <code>summary()</code> object. Bootstrap confidence intervals and Delta method confidence intervals. The default method to constructing confidence intervals in <strong>mecor</strong> is the Delta method. Further, Fieller method confidence intervals and zero variance method confidence intervals can be constructed with <code>summary()</code>:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="co"># fieller method ci and zero variance method ci and se&#39;s for &#39;rc_fit&#39;</span></span>
+<span id="cb7-2"><a href="#cb7-2"></a><span class="kw">summary</span>(rc_fit, <span class="dt">zerovar =</span> <span class="ot">TRUE</span>, <span class="dt">fieller =</span> <span class="ot">TRUE</span>)</span>
+<span id="cb7-3"><a href="#cb7-3"></a><span class="co">#&gt; </span></span>
+<span id="cb7-4"><a href="#cb7-4"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb7-5"><a href="#cb7-5"></a><span class="co">#&gt; mecor(formula = Y ~ MeasError(substitute = X_star, reference = X) + </span></span>
+<span id="cb7-6"><a href="#cb7-6"></a><span class="co">#&gt;     Z, data = icvs, method = &quot;standard&quot;, B = 999)</span></span>
+<span id="cb7-7"><a href="#cb7-7"></a><span class="co">#&gt; </span></span>
+<span id="cb7-8"><a href="#cb7-8"></a><span class="co">#&gt; Coefficients Corrected Model:</span></span>
+<span id="cb7-9"><a href="#cb7-9"></a><span class="co">#&gt;              Estimate       SE SE (btstr) SE (zerovar)</span></span>
+<span id="cb7-10"><a href="#cb7-10"></a><span class="co">#&gt; (Intercept) -0.037301 0.035943   0.035086     0.033365</span></span>
+<span id="cb7-11"><a href="#cb7-11"></a><span class="co">#&gt; X            0.492908 0.036959   0.037753     0.034412</span></span>
+<span id="cb7-12"><a href="#cb7-12"></a><span class="co">#&gt; Z            2.001227 0.051999   0.053961     0.048431</span></span>
+<span id="cb7-13"><a href="#cb7-13"></a><span class="co">#&gt; </span></span>
+<span id="cb7-14"><a href="#cb7-14"></a><span class="co">#&gt; 95% Confidence Intervals:</span></span>
+<span id="cb7-15"><a href="#cb7-15"></a><span class="co">#&gt;              Estimate       LCI      UCI LCI (btstr) UCI (btstr) LCI (zerovar)</span></span>
+<span id="cb7-16"><a href="#cb7-16"></a><span class="co">#&gt; (Intercept) -0.037301 -0.107748 0.033147   -0.103395    0.033592     -0.102695</span></span>
+<span id="cb7-17"><a href="#cb7-17"></a><span class="co">#&gt; X            0.492908  0.420470 0.565347    0.423385    0.571515      0.425463</span></span>
+<span id="cb7-18"><a href="#cb7-18"></a><span class="co">#&gt; Z            2.001227  1.899311 2.103143    1.889610    2.104471      1.906303</span></span>
+<span id="cb7-19"><a href="#cb7-19"></a><span class="co">#&gt;             UCI (zerovar) LCI (fieller) UCI (fieller)</span></span>
+<span id="cb7-20"><a href="#cb7-20"></a><span class="co">#&gt; (Intercept)      0.028093            NA            NA</span></span>
+<span id="cb7-21"><a href="#cb7-21"></a><span class="co">#&gt; X                0.560354      0.421772      0.566887</span></span>
+<span id="cb7-22"><a href="#cb7-22"></a><span class="co">#&gt; Z                2.096151            NA            NA</span></span>
+<span id="cb7-23"><a href="#cb7-23"></a><span class="co">#&gt; Bootstrap Confidence Intervals are based on 999 bootstrap replicates using percentiles </span></span>
+<span id="cb7-24"><a href="#cb7-24"></a><span class="co">#&gt; </span></span>
+<span id="cb7-25"><a href="#cb7-25"></a><span class="co">#&gt; The measurement error is corrected for by application of regression calibration </span></span>
+<span id="cb7-26"><a href="#cb7-26"></a><span class="co">#&gt; </span></span>
+<span id="cb7-27"><a href="#cb7-27"></a><span class="co">#&gt; Coefficients Uncorrected Model:</span></span>
+<span id="cb7-28"><a href="#cb7-28"></a><span class="co">#&gt;              Estimate Std. Error t value Pr(&gt;|t|)</span></span>
+<span id="cb7-29"><a href="#cb7-29"></a><span class="co">#&gt; (Intercept) -0.039467   0.033355 -1.1832    0.237</span></span>
+<span id="cb7-30"><a href="#cb7-30"></a><span class="co">#&gt; X_star       0.413716   0.028883 14.3239   &lt;2e-16</span></span>
+<span id="cb7-31"><a href="#cb7-31"></a><span class="co">#&gt; Z            2.084570   0.044323 47.0316   &lt;2e-16</span></span>
+<span id="cb7-32"><a href="#cb7-32"></a><span class="co">#&gt; </span></span>
+<span id="cb7-33"><a href="#cb7-33"></a><span class="co">#&gt; 95% Confidence Intervals:</span></span>
+<span id="cb7-34"><a href="#cb7-34"></a><span class="co">#&gt;              Estimate       LCI      UCI</span></span>
+<span id="cb7-35"><a href="#cb7-35"></a><span class="co">#&gt; (Intercept) -0.039467 -0.104921 0.025987</span></span>
+<span id="cb7-36"><a href="#cb7-36"></a><span class="co">#&gt; X_star       0.413716  0.357038 0.470394</span></span>
+<span id="cb7-37"><a href="#cb7-37"></a><span class="co">#&gt; Z            2.084570  1.997594 2.171547</span></span>
+<span id="cb7-38"><a href="#cb7-38"></a><span class="co">#&gt; </span></span>
+<span id="cb7-39"><a href="#cb7-39"></a><span class="co">#&gt; Residual standard error: 1.052587 on 997 degrees of freedom</span></span></code></pre></div>
+<p>Fieller method confidence intervals are only constructed for the corrected covariate (in this case <span class="math inline">\(X\)</span>).</p>
+</div>
+<div id="replicates-study" class="section level2">
+<h2>Replicates study</h2>
+<p>The simulated data set <code>rs</code> in <strong>mecor</strong> is a replicates study. A replicates study includes a subset of individuals of whom the error-prone substitute exposure is repeatedly measured. The dataset <code>rs</code> contains 1000 observations of the outcome Y, three replicate measures of the error-prone exposure <span class="math inline">\(X_1^*, X_2^*\)</span> and <span class="math inline">\(X_3^*\)</span>, and two covariates <span class="math inline">\(Z_1\)</span> and <span class="math inline">\(Z_2\)</span>. It is assumed that there is ‘random’ measurement error in the repeatedly measured substitute exposure measure.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="co"># load replicates study</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a><span class="kw">data</span>(<span class="st">&quot;rs&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;mecor&quot;</span>)</span>
+<span id="cb8-3"><a href="#cb8-3"></a><span class="kw">head</span>(rs)</span>
+<span id="cb8-4"><a href="#cb8-4"></a><span class="co">#&gt;            Y  X_star_1  X_star_2   X_star_3         Z1         Z2</span></span>
+<span id="cb8-5"><a href="#cb8-5"></a><span class="co">#&gt; 1  4.3499125 2.3579436  2.109616  2.5476139  1.3052590  1.0955135</span></span>
+<span id="cb8-6"><a href="#cb8-6"></a><span class="co">#&gt; 2  1.5012541 2.4388260  2.951810  1.1754237  0.5207398  0.1326150</span></span>
+<span id="cb8-7"><a href="#cb8-7"></a><span class="co">#&gt; 3  0.8249127 2.1473954  1.640624  1.1649830 -0.2035013 -0.2137111</span></span>
+<span id="cb8-8"><a href="#cb8-8"></a><span class="co">#&gt; 4  5.5258514 2.8678562  2.547374  3.7509709  2.2994651  0.3441749</span></span>
+<span id="cb8-9"><a href="#cb8-9"></a><span class="co">#&gt; 5  1.9177871 1.1964137  2.280420  2.1699911 -0.2930064  1.9122899</span></span>
+<span id="cb8-10"><a href="#cb8-10"></a><span class="co">#&gt; 6 -1.0732459 0.8809592 -1.246339 -0.0832355 -0.8107538  0.7414892</span></span></code></pre></div>
+<p>When ignoring the measurement error in <span class="math inline">\(X_1^*\)</span>, one would naively regress <span class="math inline">\(X_1^*\)</span>, <span class="math inline">\(Z_1\)</span> and <span class="math inline">\(Z_2\)</span> on <span class="math inline">\(Y\)</span>. Which results in a biased estimation of the exposure-outcome association:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="co"># naive estimate of the exposure-outcome association</span></span>
+<span id="cb9-2"><a href="#cb9-2"></a><span class="kw">lm</span>(Y <span class="op">~</span><span class="st"> </span>X_star_<span class="dv">1</span> <span class="op">+</span><span class="st"> </span>Z1 <span class="op">+</span><span class="st"> </span>Z2, </span>
+<span id="cb9-3"><a href="#cb9-3"></a>   <span class="dt">data =</span> rs)</span>
+<span id="cb9-4"><a href="#cb9-4"></a><span class="co">#&gt; </span></span>
+<span id="cb9-5"><a href="#cb9-5"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb9-6"><a href="#cb9-6"></a><span class="co">#&gt; lm(formula = Y ~ X_star_1 + Z1 + Z2, data = rs)</span></span>
+<span id="cb9-7"><a href="#cb9-7"></a><span class="co">#&gt; </span></span>
+<span id="cb9-8"><a href="#cb9-8"></a><span class="co">#&gt; Coefficients:</span></span>
+<span id="cb9-9"><a href="#cb9-9"></a><span class="co">#&gt; (Intercept)     X_star_1           Z1           Z2  </span></span>
+<span id="cb9-10"><a href="#cb9-10"></a><span class="co">#&gt;    -0.03821      0.44014      2.04397      1.08130</span></span></code></pre></div>
+<p>Or alternatively, one could calculate the mean of each of the three replicate measures. Yet, this would still lead to a biased estimation of the exposure-outcome association:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="co">## calculate the mean of the three replicate measures</span></span>
+<span id="cb10-2"><a href="#cb10-2"></a>rs<span class="op">$</span>X_star_<span class="dv">123</span> &lt;-<span class="st"> </span><span class="kw">with</span>(rs, <span class="kw">rowMeans</span>(<span class="kw">cbind</span>(X_star_<span class="dv">1</span>, X_star_<span class="dv">2</span>, X_star_<span class="dv">3</span>)))</span>
+<span id="cb10-3"><a href="#cb10-3"></a><span class="co"># naive estimate of the exposure-outcome association version 2</span></span>
+<span id="cb10-4"><a href="#cb10-4"></a><span class="kw">lm</span>(Y <span class="op">~</span><span class="st"> </span>X_star_<span class="dv">123</span> <span class="op">+</span><span class="st"> </span>Z1 <span class="op">+</span><span class="st"> </span>Z2,</span>
+<span id="cb10-5"><a href="#cb10-5"></a>   <span class="dt">data =</span> rs)</span>
+<span id="cb10-6"><a href="#cb10-6"></a><span class="co">#&gt; </span></span>
+<span id="cb10-7"><a href="#cb10-7"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb10-8"><a href="#cb10-8"></a><span class="co">#&gt; lm(formula = Y ~ X_star_123 + Z1 + Z2, data = rs)</span></span>
+<span id="cb10-9"><a href="#cb10-9"></a><span class="co">#&gt; </span></span>
+<span id="cb10-10"><a href="#cb10-10"></a><span class="co">#&gt; Coefficients:</span></span>
+<span id="cb10-11"><a href="#cb10-11"></a><span class="co">#&gt; (Intercept)   X_star_123           Z1           Z2  </span></span>
+<span id="cb10-12"><a href="#cb10-12"></a><span class="co">#&gt;    -0.05795      0.48892      2.00379      1.03905</span></span></code></pre></div>
+<p>For an unbiased estimation of the exposure-outcome association, one could use regression calibration using <code>mecor()</code>:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a><span class="kw">mecor</span>(<span class="dt">formula =</span> Y <span class="op">~</span><span class="st"> </span><span class="kw">MeasError</span>(X_star_<span class="dv">1</span>, <span class="dt">replicate =</span> <span class="kw">cbind</span>(X_star_<span class="dv">2</span>, X_star_<span class="dv">3</span>)) <span class="op">+</span><span class="st"> </span>Z1 <span class="op">+</span><span class="st"> </span>Z2,</span>
+<span id="cb11-2"><a href="#cb11-2"></a>      <span class="dt">data =</span> rs)</span>
+<span id="cb11-3"><a href="#cb11-3"></a><span class="co">#&gt; </span></span>
+<span id="cb11-4"><a href="#cb11-4"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb11-5"><a href="#cb11-5"></a><span class="co">#&gt; mecor(formula = Y ~ MeasError(X_star_1, replicate = cbind(X_star_2, </span></span>
+<span id="cb11-6"><a href="#cb11-6"></a><span class="co">#&gt;     X_star_3)) + Z1 + Z2, data = rs)</span></span>
+<span id="cb11-7"><a href="#cb11-7"></a><span class="co">#&gt; </span></span>
+<span id="cb11-8"><a href="#cb11-8"></a><span class="co">#&gt; Coefficients Corrected Model:</span></span>
+<span id="cb11-9"><a href="#cb11-9"></a><span class="co">#&gt;  (Intercept) cor_X_star_1           Z1           Z2 </span></span>
+<span id="cb11-10"><a href="#cb11-10"></a><span class="co">#&gt;  -0.07416626   0.54994384   1.95079727   0.98285575 </span></span>
+<span id="cb11-11"><a href="#cb11-11"></a><span class="co">#&gt; </span></span>
+<span id="cb11-12"><a href="#cb11-12"></a><span class="co">#&gt; Coefficients Uncorrected Model:</span></span>
+<span id="cb11-13"><a href="#cb11-13"></a><span class="co">#&gt; (Intercept)    X_star_1          Z1          Z2 </span></span>
+<span id="cb11-14"><a href="#cb11-14"></a><span class="co">#&gt; -0.03821319  0.44013564  2.04396587  1.08129753</span></span></code></pre></div>
+<p>Instead of using the <em>reference</em> argument in the <code>MeasError()</code> object, the <em>replicate</em> argument is used. Standard errors of the regression calibration estimator and confidence intervals can be constructed similar to what was shown for an internal validation study.</p>
+</div>
+<div id="calibration-study" class="section level2">
+<h2>Calibration study</h2>
+<p>The simulated data set <code>ccs</code> in <strong>mecor</strong> is a covariate calibration study. In a calibration study, two types of measurements are used to measure the exposure. A measurement method prone to ‘systematic’ error, and a measurement method prone to ‘random’ error. The measurement prone to ‘systematic’ error is observed in the full study, the measurement prone to ‘classical’ error is observed in a subset of the study and repeatedly measured. The dataset <code>ccs</code> contains 1000 observations of the outcome <span class="math inline">\(Y\)</span>, the substitute exposure <span class="math inline">\(X^{*^s}\)</span> prone to systematic error, the covariate <span class="math inline">\(Z\)</span> and two replicates of the substitute exposure prone <span class="math inline">\(X^*_1\)</span> and <span class="math inline">\(X^*_2\)</span> prone to ‘random’ error. The two replicate measures are observed in the first 500 individuals of the study population.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="co"># load calibration study</span></span>
+<span id="cb12-2"><a href="#cb12-2"></a><span class="kw">data</span>(<span class="st">&quot;ccs&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;mecor&quot;</span>)</span>
+<span id="cb12-3"><a href="#cb12-3"></a><span class="kw">head</span>(ccs)</span>
+<span id="cb12-4"><a href="#cb12-4"></a><span class="co">#&gt;            Y      X_star          Z    X_star_1   X_star_2</span></span>
+<span id="cb12-5"><a href="#cb12-5"></a><span class="co">#&gt; 1 -0.3406228 -1.53874595 -0.0936835 0.031424096 -1.1768822</span></span>
+<span id="cb12-6"><a href="#cb12-6"></a><span class="co">#&gt; 2 -2.3789052  0.05586177 -0.3031960 0.008015595  0.1158643</span></span>
+<span id="cb12-7"><a href="#cb12-7"></a><span class="co">#&gt; 3  0.9907555  2.24113988  1.1151805 0.774927602  0.9707306</span></span>
+<span id="cb12-8"><a href="#cb12-8"></a><span class="co">#&gt; 4  3.0693600  3.71006822  1.0004028 2.406897833  1.2369752</span></span>
+<span id="cb12-9"><a href="#cb12-9"></a><span class="co">#&gt; 5  5.1141197  3.20337227  1.6738982 1.399716377  0.8444616</span></span>
+<span id="cb12-10"><a href="#cb12-10"></a><span class="co">#&gt; 6  2.7177172  2.10226409  1.1320830 1.141724967  1.3529544</span></span></code></pre></div>
+<p>When ignoring the measurement error in <span class="math inline">\(X^{*^s}\)</span>, one would naively regress <span class="math inline">\(X^{*^s}\)</span> and <span class="math inline">\(Z\)</span> on <span class="math inline">\(Y\)</span>. Which results in a biased estimation of the exposure-outcome association:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="co">## uncorrected regression</span></span>
+<span id="cb13-2"><a href="#cb13-2"></a><span class="kw">lm</span>(Y <span class="op">~</span><span class="st"> </span>X_star <span class="op">+</span><span class="st"> </span>Z, </span>
+<span id="cb13-3"><a href="#cb13-3"></a>   <span class="dt">data =</span> ccs)</span>
+<span id="cb13-4"><a href="#cb13-4"></a><span class="co">#&gt; </span></span>
+<span id="cb13-5"><a href="#cb13-5"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb13-6"><a href="#cb13-6"></a><span class="co">#&gt; lm(formula = Y ~ X_star + Z, data = ccs)</span></span>
+<span id="cb13-7"><a href="#cb13-7"></a><span class="co">#&gt; </span></span>
+<span id="cb13-8"><a href="#cb13-8"></a><span class="co">#&gt; Coefficients:</span></span>
+<span id="cb13-9"><a href="#cb13-9"></a><span class="co">#&gt; (Intercept)       X_star            Z  </span></span>
+<span id="cb13-10"><a href="#cb13-10"></a><span class="co">#&gt;     0.02212      0.22726      2.10578</span></span></code></pre></div>
+<p>Alternatively, one could use the first half of the study population and use the mean of each of the two replicate measures. Yet, this would still lead to a biased estimation of the exposure-outcome association:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="co">## calculate mean of three replicate measures</span></span>
+<span id="cb14-2"><a href="#cb14-2"></a>ccs<span class="op">$</span>X_star_<span class="dv">12</span> &lt;-<span class="st"> </span><span class="kw">with</span>(ccs, <span class="kw">rowMeans</span>(<span class="kw">cbind</span>(X_star_<span class="dv">1</span>, X_star_<span class="dv">2</span>)))</span>
+<span id="cb14-3"><a href="#cb14-3"></a><span class="co">## uncorrected regression version 2</span></span>
+<span id="cb14-4"><a href="#cb14-4"></a><span class="kw">lm</span>(Y <span class="op">~</span><span class="st"> </span>X_star_<span class="dv">12</span> <span class="op">+</span><span class="st"> </span>Z,</span>
+<span id="cb14-5"><a href="#cb14-5"></a>   <span class="dt">data =</span> ccs)</span>
+<span id="cb14-6"><a href="#cb14-6"></a><span class="co">#&gt; </span></span>
+<span id="cb14-7"><a href="#cb14-7"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb14-8"><a href="#cb14-8"></a><span class="co">#&gt; lm(formula = Y ~ X_star_12 + Z, data = ccs)</span></span>
+<span id="cb14-9"><a href="#cb14-9"></a><span class="co">#&gt; </span></span>
+<span id="cb14-10"><a href="#cb14-10"></a><span class="co">#&gt; Coefficients:</span></span>
+<span id="cb14-11"><a href="#cb14-11"></a><span class="co">#&gt; (Intercept)    X_star_12            Z  </span></span>
+<span id="cb14-12"><a href="#cb14-12"></a><span class="co">#&gt;    -0.06003      0.46183      2.09969</span></span></code></pre></div>
+<p>For an unbiased estimation of the exposure-outcome association, one could use <em>standard regression calibration</em> using <code>mecor()</code>:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="kw">mecor</span>(<span class="dt">formula =</span> Y <span class="op">~</span><span class="st"> </span><span class="kw">MeasError</span>(X_star, <span class="dt">replicate =</span> <span class="kw">cbind</span>(X_star_<span class="dv">1</span>, X_star_<span class="dv">2</span>)) <span class="op">+</span><span class="st"> </span>Z,</span>
+<span id="cb15-2"><a href="#cb15-2"></a>      <span class="dt">data =</span> ccs)</span>
+<span id="cb15-3"><a href="#cb15-3"></a><span class="co">#&gt; </span></span>
+<span id="cb15-4"><a href="#cb15-4"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb15-5"><a href="#cb15-5"></a><span class="co">#&gt; mecor(formula = Y ~ MeasError(X_star, replicate = cbind(X_star_1, </span></span>
+<span id="cb15-6"><a href="#cb15-6"></a><span class="co">#&gt;     X_star_2)) + Z, data = ccs)</span></span>
+<span id="cb15-7"><a href="#cb15-7"></a><span class="co">#&gt; </span></span>
+<span id="cb15-8"><a href="#cb15-8"></a><span class="co">#&gt; Coefficients Corrected Model:</span></span>
+<span id="cb15-9"><a href="#cb15-9"></a><span class="co">#&gt; (Intercept)  cor_X_star           Z </span></span>
+<span id="cb15-10"><a href="#cb15-10"></a><span class="co">#&gt;  0.03148803  0.47565243  2.10394044 </span></span>
+<span id="cb15-11"><a href="#cb15-11"></a><span class="co">#&gt; </span></span>
+<span id="cb15-12"><a href="#cb15-12"></a><span class="co">#&gt; Coefficients Uncorrected Model:</span></span>
+<span id="cb15-13"><a href="#cb15-13"></a><span class="co">#&gt; (Intercept)      X_star           Z </span></span>
+<span id="cb15-14"><a href="#cb15-14"></a><span class="co">#&gt;  0.02212343  0.22725887  2.10577516</span></span></code></pre></div>
+<p>The reader who is paying attention would perhaps notice that the subset of 500 individuals of whom <span class="math inline">\(X_1^*\)</span> and <span class="math inline">\(X_2^*\)</span> were observed resembles a replicates study. <em>Standard regression calibration</em> therefore could alternatively be applied in the following way:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="kw">mecor</span>(<span class="dt">formula =</span> Y <span class="op">~</span><span class="st"> </span><span class="kw">MeasError</span>(X_star_<span class="dv">1</span>, <span class="dt">replicate =</span> X_star_<span class="dv">2</span>) <span class="op">+</span><span class="st"> </span>Z,</span>
+<span id="cb16-2"><a href="#cb16-2"></a>      <span class="dt">data =</span> <span class="kw">subset</span>(ccs, <span class="op">!</span><span class="kw">is.na</span>(X_star_<span class="dv">2</span>)))</span>
+<span id="cb16-3"><a href="#cb16-3"></a><span class="co">#&gt; </span></span>
+<span id="cb16-4"><a href="#cb16-4"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb16-5"><a href="#cb16-5"></a><span class="co">#&gt; mecor(formula = Y ~ MeasError(X_star_1, replicate = X_star_2) + </span></span>
+<span id="cb16-6"><a href="#cb16-6"></a><span class="co">#&gt;     Z, data = subset(ccs, !is.na(X_star_2)))</span></span>
+<span id="cb16-7"><a href="#cb16-7"></a><span class="co">#&gt; </span></span>
+<span id="cb16-8"><a href="#cb16-8"></a><span class="co">#&gt; Coefficients Corrected Model:</span></span>
+<span id="cb16-9"><a href="#cb16-9"></a><span class="co">#&gt;  (Intercept) cor_X_star_1            Z </span></span>
+<span id="cb16-10"><a href="#cb16-10"></a><span class="co">#&gt;  -0.05777153   0.51851033   2.04627765 </span></span>
+<span id="cb16-11"><a href="#cb16-11"></a><span class="co">#&gt; </span></span>
+<span id="cb16-12"><a href="#cb16-12"></a><span class="co">#&gt; Coefficients Uncorrected Model:</span></span>
+<span id="cb16-13"><a href="#cb16-13"></a><span class="co">#&gt; (Intercept)    X_star_1           Z </span></span>
+<span id="cb16-14"><a href="#cb16-14"></a><span class="co">#&gt; -0.06288496  0.43184108  2.12827829</span></span></code></pre></div>
+<p>Standard errors of the regression calibration estimator and confidence intervals can be constructed similar to what was shown for an internal validation study.</p>
+</div>
+<div id="external-validation-study" class="section level2">
+<h2>External validation study</h2>
+<p>The simulated data set <code>ecvs</code> in <strong>mecor</strong> is a external covariate-validation study. An external validation study is used when in the main study, no information is available to correct for the measurement error in the exposure <span class="math inline">\(X\)</span>. Suppose for example that <span class="math inline">\(X\)</span> is not observed in the internal covariate-validation study <code>icvs</code>. An external validation study is a (small) sub study containing observations of the reference measure <span class="math inline">\(X\)</span>, the error-prone substitute measure <span class="math inline">\(X^*\)</span> and the covariate <span class="math inline">\(Z\)</span> of the original study. The external validation study is then used to estimate the calibration model, that is subsequently used to correct for the measurement error in the main study.</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a><span class="co"># load internal covariate validation study</span></span>
+<span id="cb17-2"><a href="#cb17-2"></a><span class="kw">data</span>(<span class="st">&quot;ecvs&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;mecor&quot;</span>)</span>
+<span id="cb17-3"><a href="#cb17-3"></a><span class="kw">head</span>(ecvs)</span>
+<span id="cb17-4"><a href="#cb17-4"></a><span class="co">#&gt;            X     X_star           Z</span></span>
+<span id="cb17-5"><a href="#cb17-5"></a><span class="co">#&gt; 1 -1.8177022 -1.0599121 -0.90610225</span></span>
+<span id="cb17-6"><a href="#cb17-6"></a><span class="co">#&gt; 2 -0.6256011 -1.1090224 -2.02664356</span></span>
+<span id="cb17-7"><a href="#cb17-7"></a><span class="co">#&gt; 3  1.9752408  1.3199730  1.37740119</span></span>
+<span id="cb17-8"><a href="#cb17-8"></a><span class="co">#&gt; 4  0.3140878 -0.1107001  0.24907466</span></span>
+<span id="cb17-9"><a href="#cb17-9"></a><span class="co">#&gt; 5  1.3191880  1.6079029 -0.52663051</span></span>
+<span id="cb17-10"><a href="#cb17-10"></a><span class="co">#&gt; 6 -0.6149009 -0.7632676  0.03778671</span></span>
+<span id="cb17-11"><a href="#cb17-11"></a><span class="kw">data</span>(<span class="st">&quot;icvs&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;mecor&quot;</span>)</span></code></pre></div>
+<p>Suppose reference measure <span class="math inline">\(X\)</span> is not observed in dataset <code>icvs</code>. To correct the bias in the naive association between exposure <span class="math inline">\(X^*\)</span> and outcome <span class="math inline">\(Y\)</span> given <span class="math inline">\(Z\)</span>, using the external validation study, one can proceed as follows using <code>mecor()</code>:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="co"># Estimate the calibration model in the external validation study</span></span>
+<span id="cb18-2"><a href="#cb18-2"></a>calmod &lt;-<span class="st"> </span><span class="kw">lm</span>(X <span class="op">~</span><span class="st"> </span>X_star <span class="op">+</span><span class="st"> </span>Z, </span>
+<span id="cb18-3"><a href="#cb18-3"></a>             <span class="dt">data =</span> ecvs)</span>
+<span id="cb18-4"><a href="#cb18-4"></a><span class="co"># Use the calibration model for measurement error correction:</span></span>
+<span id="cb18-5"><a href="#cb18-5"></a><span class="kw">mecor</span>(Y <span class="op">~</span><span class="st"> </span><span class="kw">MeasErrorExt</span>(<span class="dt">substitute =</span> X_star, <span class="dt">model =</span> calmod) <span class="op">+</span><span class="st"> </span>Z,</span>
+<span id="cb18-6"><a href="#cb18-6"></a>      <span class="dt">data =</span> icvs)</span>
+<span id="cb18-7"><a href="#cb18-7"></a><span class="co">#&gt; </span></span>
+<span id="cb18-8"><a href="#cb18-8"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb18-9"><a href="#cb18-9"></a><span class="co">#&gt; mecor(formula = Y ~ MeasErrorExt(substitute = X_star, model = calmod) + </span></span>
+<span id="cb18-10"><a href="#cb18-10"></a><span class="co">#&gt;     Z, data = icvs)</span></span>
+<span id="cb18-11"><a href="#cb18-11"></a><span class="co">#&gt; </span></span>
+<span id="cb18-12"><a href="#cb18-12"></a><span class="co">#&gt; Coefficients Corrected Model:</span></span>
+<span id="cb18-13"><a href="#cb18-13"></a><span class="co">#&gt; (Intercept)  cor_X_star           Z </span></span>
+<span id="cb18-14"><a href="#cb18-14"></a><span class="co">#&gt; -0.01428791  0.47721827  1.99464677 </span></span>
+<span id="cb18-15"><a href="#cb18-15"></a><span class="co">#&gt; </span></span>
+<span id="cb18-16"><a href="#cb18-16"></a><span class="co">#&gt; Coefficients Uncorrected Model:</span></span>
+<span id="cb18-17"><a href="#cb18-17"></a><span class="co">#&gt; (Intercept)      X_star           Z </span></span>
+<span id="cb18-18"><a href="#cb18-18"></a><span class="co">#&gt; -0.03946702  0.41371614  2.08457045</span></span></code></pre></div>
+<p>In the above, a <code>MeasErrorExt()</code> object is used, indicating that external information is used for measurement error correction. The model argument of a <code>MeasErrorExt()</code> object takes a linear model of class lm (in the above <code>calmod</code>). Alternatively, a named list with the coefficients of the calibration model can be used as follows:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a><span class="co"># Use coefficients for measurement error correction:</span></span>
+<span id="cb19-2"><a href="#cb19-2"></a><span class="kw">mecor</span>(Y <span class="op">~</span><span class="st"> </span><span class="kw">MeasErrorExt</span>(X_star, <span class="dt">model =</span> <span class="kw">list</span>(<span class="dt">coef =</span> <span class="kw">c</span>(<span class="dv">0</span>, <span class="fl">0.8</span>, <span class="dv">2</span>))) <span class="op">+</span><span class="st"> </span>Z,</span>
+<span id="cb19-3"><a href="#cb19-3"></a>      <span class="dt">data =</span> icvs)</span>
+<span id="cb19-4"><a href="#cb19-4"></a><span class="co">#&gt; </span></span>
+<span id="cb19-5"><a href="#cb19-5"></a><span class="co">#&gt; Call:</span></span>
+<span id="cb19-6"><a href="#cb19-6"></a><span class="co">#&gt; mecor(formula = Y ~ MeasErrorExt(X_star, model = list(coef = c(0, </span></span>
+<span id="cb19-7"><a href="#cb19-7"></a><span class="co">#&gt;     0.8, 2))) + Z, data = icvs)</span></span>
+<span id="cb19-8"><a href="#cb19-8"></a><span class="co">#&gt; </span></span>
+<span id="cb19-9"><a href="#cb19-9"></a><span class="co">#&gt; Coefficients Corrected Model:</span></span>
+<span id="cb19-10"><a href="#cb19-10"></a><span class="co">#&gt; (Intercept)  cor_X_star           Z </span></span>
+<span id="cb19-11"><a href="#cb19-11"></a><span class="co">#&gt; -0.03946702  0.51714517  1.05028010 </span></span>
+<span id="cb19-12"><a href="#cb19-12"></a><span class="co">#&gt; </span></span>
+<span id="cb19-13"><a href="#cb19-13"></a><span class="co">#&gt; Coefficients Uncorrected Model:</span></span>
+<span id="cb19-14"><a href="#cb19-14"></a><span class="co">#&gt; (Intercept)      X_star           Z </span></span>
+<span id="cb19-15"><a href="#cb19-15"></a><span class="co">#&gt; -0.03946702  0.41371614  2.08457045</span></span></code></pre></div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
