@@ -8,28 +8,28 @@ library(mecor)
 
 ## ----load_data, eval = TRUE---------------------------------------------------
 # load internal covariate validation study
-data("icvs", package = "mecor")
-head(icvs)
+data("vat", package = "mecor")
+head(vat)
 
 ## ----uncorfit, eval = TRUE----------------------------------------------------
 # naive estimate of the exposure-outcome association
-lm(Y ~ X_star + Z, data = icvs)
+lm(ir_ln ~ wc + sex + age + tbf, data = vat)
 
 ## ----ivr, eval = TRUE---------------------------------------------------------
 # analysis restricted to the internal validation set
-lm(Y ~ X + Z, data = subset(icvs, !is.na(X)))
+lm(ir_ln ~ vat + sex + age + tbf, data = subset(vat, !is.na(vat)))
 
 ## ----rc, eval = TRUE----------------------------------------------------------
-mecor(formula = Y ~ MeasError(substitute = X_star, reference = X) + Z,
-      data = icvs,
+mecor(formula = ir_ln ~ MeasError(substitute = wc, reference = vat) + sex + age + tbf,
+      data = vat,
       method = "standard", # defaults to "standard"
       B = 0) # defaults to 0
 
 ## ----rc_se, eval = TRUE, results = 'hide'-------------------------------------
 # save corrected fit
 rc_fit <- 
-  mecor(formula = Y ~ MeasError(substitute = X_star, reference = X) + Z,
-        data = icvs,
+  mecor(formula = ir_ln ~ MeasError(substitute = wc, reference = vat) + age + sex + tbf,
+        data = vat,
         method = "standard", # defaults to "standard"
         B = 999) # defaults to 0
 
@@ -42,66 +42,62 @@ summary(rc_fit, zerovar = TRUE, fieller = TRUE)
 
 ## ----load_data2, eval = TRUE--------------------------------------------------
 # load replicates study
-data("rs", package = "mecor")
-head(rs)
+data("bloodpressure", package = "mecor")
+head(bloodpressure)
 
 ## ----uncorfit2, eval = TRUE---------------------------------------------------
 # naive estimate of the exposure-outcome association
-lm(Y ~ X_star_1 + Z1 + Z2, 
-   data = rs)
+lm(creatinine ~ sbp30 + age, 
+   data = bloodpressure)
 
 ## ----uncorfit3, eval = TRUE---------------------------------------------------
 ## calculate the mean of the three replicate measures
-rs$X_star_123 <- with(rs, rowMeans(cbind(X_star_1, X_star_2, X_star_3)))
+bloodpressure$sbp_123 <- with(bloodpressure, rowMeans(cbind(sbp30, sbp60, sbp120)))
 # naive estimate of the exposure-outcome association version 2
-lm(Y ~ X_star_123 + Z1 + Z2,
-   data = rs)
+lm(creatinine ~ sbp_123 + age,
+   data = bloodpressure)
 
 ## ----rc2, eval = TRUE---------------------------------------------------------
-mecor(formula = Y ~ MeasError(X_star_1, replicate = cbind(X_star_2, X_star_3)) + Z1 + Z2,
-      data = rs)
+mecor(formula = creatinine ~ MeasError(sbp30, replicate = cbind(sbp60, sbp120)) + age,
+      data = bloodpressure)
 
 ## ----load_data3, eval = TRUE--------------------------------------------------
 # load calibration study
-data("ccs", package = "mecor")
-head(ccs)
+data("sodium", package = "mecor")
+head(sodium)
 
 ## ----uncorfit4, eval = TRUE---------------------------------------------------
 ## uncorrected regression
-lm(Y ~ X_star + Z, 
-   data = ccs)
+lm(recall ~ diet, 
+   data = sodium)
 
 ## ----uncorfit5, eval = TRUE---------------------------------------------------
 ## calculate mean of three replicate measures
-ccs$X_star_12 <- with(ccs, rowMeans(cbind(X_star_1, X_star_2)))
+sodium$urinary_12 <- with(sodium, rowMeans(cbind(urinary1, urinary2)))
 ## uncorrected regression version 2
-lm(Y ~ X_star_12 + Z,
-   data = ccs)
+lm(urinary_12 ~ diet,
+   data = sodium)
 
 ## ----rc3, eval = TRUE---------------------------------------------------------
-mecor(formula = Y ~ MeasError(X_star, replicate = cbind(X_star_1, X_star_2)) + Z,
-      data = ccs)
-
-## ----rc4, eval = TRUE---------------------------------------------------------
-mecor(formula = Y ~ MeasError(X_star_1, replicate = X_star_2) + Z,
-      data = subset(ccs, !is.na(X_star_2)))
+mecor(formula = MeasError(substitute = recall, replicate = cbind(urinary1, urinary2)) ~ diet,
+      data = sodium)
 
 ## ----load_data4, eval = TRUE--------------------------------------------------
 # load internal covariate validation study
-data("ecvs", package = "mecor")
-head(ecvs)
-data("icvs", package = "mecor")
+data("haemoglobin_ext", package = "mecor")
+head(haemoglobin_ext)
+data("haemoglobin", package = "mecor")
 
 ## ----extrc, eval = TRUE-------------------------------------------------------
 # Estimate the calibration model in the external validation study
-calmod <- lm(X ~ X_star + Z, 
-             data = ecvs)
+calmod <- lm(capillary ~ venous, 
+             data = haemoglobin)
 # Use the calibration model for measurement error correction:
-mecor(Y ~ MeasErrorExt(substitute = X_star, model = calmod) + Z,
-      data = icvs)
+mecor(MeasErrorExt(substitute = capillary, model = calmod) ~ supplement,
+      data = haemoglobin)
 
 ## ----extrc2, eval = TRUE------------------------------------------------------
 # Use coefficients for measurement error correction:
-mecor(Y ~ MeasErrorExt(X_star, model = list(coef = c(0, 0.8, 2))) + Z,
-      data = icvs)
+mecor(MeasErrorExt(capillary, model = list(coef = c(-7, 1.1))) ~ supplement,
+      data = haemoglobin)
 

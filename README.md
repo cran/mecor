@@ -22,10 +22,10 @@ Quick demo
 ``` r
 library(mecor)
 # load the internal covariate validation study
-data("icvs", package = "mecor")
-head(icvs)
+data("vat", package = "mecor")
+head(vat)
 # correct the biased exposure-outcome association
-mecor(Y ~ MeasError(X_star, reference = X) + Z, data = icvs, method = "standard")
+mecor(ir_ln ~ MeasError(substitute = wc, reference = vat) + age + sex + tbf, data = vat, method = "standard")
 ```
 
 More examples
@@ -45,7 +45,8 @@ Key reference
 
 -   Nab L, van Smeden M, Keogh RH, Groenwold RHH. mecor: an R package
     for measurement error correction in linear models with a continuous
-    outcome.
+    outcome. 2021:208:106238. 
+    [doi:10.1016/j.cmpb.2021.106238](https://doi.org/10.1016/j.cmpb.2021.106238)
 
 References to methods implemented in the package
 ------------------------------------------------

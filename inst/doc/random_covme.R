@@ -8,17 +8,18 @@ library(mecor)
 
 ## ----load_data, eval = TRUE---------------------------------------------------
 # load internal covariate validation study
-data("icvs", package = "mecor")
-head(icvs)
+data("vat", package = "mecor")
+head(vat)
 
 ## ----uncorfit, eval = TRUE----------------------------------------------------
 # naive estimate of the exposure-outcome association
-lm(Y ~ X_star + Z, data = icvs)
+data(vat)
+lm(ir_ln ~ wc + age, data = vat)
 
 ## ----extrc, eval = TRUE-------------------------------------------------------
 # Use MeasErrorRandom for measurement error correction:
-mecor(Y ~ MeasErrorRandom(substitute = X_star, variance = 0.25) + Z,
-      data = icvs)
+mecor(ir_ln ~ MeasErrorRandom(substitute = wc, variance = 0.25) + age,
+      data = vat)
 
 ## ----extrc2, eval = TRUE------------------------------------------------------
 # First, construct the variance--covariance matrix of X_star and Z: 
@@ -28,9 +29,9 @@ mecor(Y ~ MeasErrorRandom(substitute = X_star, variance = 0.25) + Z,
 # columns. The first column of Q contains all 1000 observations of X_star, each 
 # minus the mean of X_star. The second column of Q contains all 1000 obervations 
 # of Z, each minus the mean of Z. 
-Q <- scale(cbind(icvs$X_star, icvs$Z), scale = F)
+Q <- scale(cbind(vat$wc, vat$age), scale = F)
 # Subsequently, the variance--covariance matrix of X_star and Z is constructed:
-matrix <- t(Q) %*% Q / (length(icvs$X_star) - 1)
+matrix <- t(Q) %*% Q / (length(vat$age) - 1)
 # Then, the variance--covariance matrix of X and Z is constructed, by using:
 # Var(X) = Var(X_star) - Var(U) <--- Var(U) is the assumed tau^2
 # Cov(X, Z) = Cov(X_star, Z)    <--- since U is assumed independent of Z
@@ -52,11 +53,11 @@ matrix1 %*% solve(matrix)
 # Or, more familiar, the calibration model,
 # E[X|X_star, Z] = lambda0 + lambda1 * X_star + lambda2 * Z
 lambda1 <- 1 / model_matrix[1, 1]
-lambda2 <- model_matrix[2,1] * -lambda1
+lambda2 <- model_matrix[2,1] * - lambda1
 # From standard theory, we have,
 # lambda0 = mean(X) - lambda1 * mean(X_star) - lambda2 * mean(Z)
 # mean(X) = mean(X_star) since we assume random measurement error
-lambda0 <- mean(icvs$X_star) - lambda1 * mean(icvs$X_star) - lambda2 * mean(icvs$Z)
+lambda0 <- mean(vat$wc) - lambda1 * mean(vat$wc) - lambda2 * mean(vat$age)
 # The calibration model matrix Lambda is defined as:
 # (lambda1 lambda0 lambda2
 #  0       1       0
@@ -66,14 +67,14 @@ model_matrix[1, 1:3] <- c(lambda1, lambda0, lambda2)
 model_matrix
 # The calibration model matrix is standard output of mecor, and can be found
 # using:
-mecor_fit <- mecor(Y ~ MeasErrorRandom(X_star, 0.25) + Z,
-                   data = icvs)
+mecor_fit <- mecor(ir_ln ~ MeasErrorRandom(wc, 0.25) + age,
+                   data = vat)
 mecor_fit$corfit$matrix
 
 ## ----extrc3, eval = TRUE------------------------------------------------------
 # Fit naive outcome model
-naive_fit <- lm(Y ~ X_star + Z, 
-                data = icvs)
+naive_fit <- lm(ir_ln ~ wc + age, 
+                data = vat)
 # Save coefficients
 beta_star <- naive_fit$coefficients
 # To prepare the coefficients for the measurement error correction, exchange the
